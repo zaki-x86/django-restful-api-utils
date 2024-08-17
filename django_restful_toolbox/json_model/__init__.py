@@ -1,0 +1,1 @@
+from django_restful_toolbox.json_model.main import *
