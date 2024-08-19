@@ -1,16 +1,23 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='django_restful_toolbox',
+    name='rest_framework_toolbox',
     version='0.1',
-    packages=['django_restful_toolbox'],
+    packages= find_packages(),
     include_package_data=True,
     install_requires=[
         'Django>=3.2',
         'djangorestframework>=3.12.4',
         'markdown>=3.3.4',
     ],
-    description='A custom Django renderer package.',
+    extra_require={
+        'dev': [
+            'twine>=3.4.1',
+            'wheel>=0.37.1',
+        ],
+        
+    },
+    description='A custom toolbox with ready to use utilities.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author='Mohamed Zaki',
