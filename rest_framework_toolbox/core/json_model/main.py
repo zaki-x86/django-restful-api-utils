@@ -17,6 +17,8 @@ __all__ = [
     'DateTimeField',
     'DateField',
     'ListField',
+    'DictField',
+    'DataField',
     'JSONField',
     # Models
     'JSONModel',
@@ -28,7 +30,7 @@ class Defaults(Enum):
     SerializerData = 2
     SerializerErrorCode = 2
     SerializerErrorDetails = 3
-    
+
 class Field:
     """A base class for all fields in `JSONModel`
     """
@@ -185,6 +187,27 @@ class ListField(Field):
             #assert type(value) is list, "Value should be a list"
         return value
 
+class DictField(Field):
+    """Dict Field. Constructor ensures value assigned is a `dict`
+    """
+    def __init__(self, default={}):
+        if default:
+            pass
+            #assert type(default) is dict, "Default should be a dict"
+        super().__init__(default)
+
+    def get_value(self, value : Dict) -> Dict:
+        if value is None and self.default is not None:
+            #assert type(self.default) is dict, "Default should be a dict"
+            return self.default
+        elif value:
+            pass
+            #assert type(value) is dict, "Value should be a dict"
+        return value
+    
+class DataField(Field):
+    pass
+
 class JSONField(Field, metaclass=_JSONModelMeta):
     def __init__(self, **kwargs):
         for field, field_type in self._fields.items():
@@ -243,8 +266,7 @@ class JSONModel(metaclass=_JSONModelMeta):
         return result
     
     def set_value(self, name, val):
-        setattr(self, name, val)
-        
+        setattr(self, name, val)        
 
     def to_json(self):
         import json
@@ -254,6 +276,9 @@ class JSONModel(metaclass=_JSONModelMeta):
         if not value:
             value = self.__class__()
         return value
+
+    def to_response(self, *args, **kwds):
+        return Response(data=self.to_dict(), headers=kwds.get('headers', {}), status=kwds.get('http_status', 200))
 
     def __call__(self, *args, **kwds) -> Response:
         return Response(data=self.to_dict(), headers=kwds.get('headers', {}), status=kwds.get('http_status', 200))
