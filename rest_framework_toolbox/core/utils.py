@@ -8,3 +8,6 @@ def import_class(module_path: str) -> Any:
 
 def get_class_name(obj):
     return obj.__class__.__name__
+
+def get_class_fields(_class):
+    return [attr for attr in dir(_class) if not callable(getattr(_class, attr)) and not attr.startswith("__") and not attr.startswith("_")]

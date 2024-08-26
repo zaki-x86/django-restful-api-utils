@@ -11,7 +11,7 @@ if not __testing:
     from django.conf import settings
     
 from rest_framework_toolbox.core.utils import import_class
-from rest_framework_toolbox.core.json_model import JSONModel
+from rest_framework_toolbox.core.models import JSONModel
 
 
 __all__ = [
@@ -95,22 +95,13 @@ class ErrorHandler:
         self._default_handlers[exception_name] = handler
     
     def _handle(self, exc : APIException, context: Dict, response: Response) -> JSONModel:
+        view = context.get('view', None)
         exception_class = exc.__class__.__name__
         error_res = None
         error_data = None
         
-        # Check if the exception thrown is DRF default and can be handled by a default handler
-        if exception_class in self._default_handlers:
-            error_res = self.error_model()
-            serializer_error_handler = getattr(error_res, 'serializer_error', None)
-            if serializer_error_handler:
-                error_res = serializer_error_handler(exc, context, response)
-            else:
-                error_res = None
-                error_data = exc.get_full_details()
-        
-        # Check if the user registered any custom handler against the exception 
-        elif exception_class in self._user_handlers:
+        # 1. Check if the user registered any custom handler against the exception 
+        if exception_class in self._user_handlers:
             user_handler = self._user_handlers[exception_class]
             # User handler must return an instance of self.error_model class
             error_res = user_handler(exc, context, response)
@@ -118,22 +109,42 @@ class ErrorHandler:
 
             return error_res
         
-        # If no handler is defined, handle the error using the exception class user supplied attributes    
+        # 2. Check if the exception thrown is DRF default and can be handled by a default handler or view's 'on_error' method
+        elif exception_class in self._default_handlers:
+            print("Handling default exception")
+            error_res = self.error_model()
+            if view:
+                serializer_error_handler = getattr(view, 'on_error', None)
+            else:
+                # No view is registered in context - return
+                print("No view is registered in context")
+                return
+            if serializer_error_handler and callable(serializer_error_handler):
+                error_res = serializer_error_handler(exc, context, response)
+            else:
+                error_res = None
+                error_data = exc.get_full_details()
+                print(f"Serializer errors: {error_data}")
+        
+        # 3. If no handler is defined, handle the error using the exception class user supplied attributes    
         else:
             error_response_fields = self._get_error_model_fields()
             error_res = self.error_model()
-            
-            for field in error_response_fields:
+
+            for field in error_response_fields:                
                 # Check if the field value is set directly in the exc class
-                val = getattr(exc, field, None)
-                if val:
+                if getattr(exc, field, None):
+                    val = getattr(exc, field, None)
                     setattr(error_res, field, val)
+                
                 # Check if the field value is set dynamically via get_* method
                 else:
                     getter= getattr(exc, f'get_{field}', None)
                     if getter:
                         error_data = getter(response, error_data)
                         setattr(error_res, field, getter(response, error_data))
+        
+        # 4. Postprocessing
         if error_res:
             return error_res
         elif error_data:        
