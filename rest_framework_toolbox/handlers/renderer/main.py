@@ -16,13 +16,17 @@ def get_response_class(view = None):
 
 class RestJsonRenderer(JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        response = getattr(renderer_context['view'], 'response', None)
         get_success_response = getattr(renderer_context['view'], 'on_success', None)
-        if renderer_context and get_success_response:
-            request =  renderer_context['view'].request
-        else:
-            print("No response class")
+        
+        # Leave error response alone as it is handled by exception handler
+        if response.status_code >= 400:
             return super(RestJsonRenderer, self).render(data, accepted_media_type, renderer_context)
         
-        response_data = get_success_response(request, data).to_dict()
+        elif renderer_context and get_success_response:
+            request =  renderer_context['view'].request
+            response_data = get_success_response(request, data).to_dict()
 
-        return super(RestJsonRenderer, self).render(response_data, accepted_media_type, renderer_context)
+            return super(RestJsonRenderer, self).render(response_data, accepted_media_type, renderer_context)
+        
+        return super(RestJsonRenderer, self).render(data, accepted_media_type, renderer_context)

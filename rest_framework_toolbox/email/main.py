@@ -23,19 +23,24 @@ from django.core.mail import send_mail
 class EmailService(threading.Thread):
     def __init__(self, *args, **kwargs):
         super().__init__()
+
         self.email_queue = queue.Queue()
         self.daemon = True
         
-        self.host = settings.EMAIL_HOST
-        self.port = settings.EMAIL_PORT
-        self.username = settings.EMAIL_HOST_USER
-        self.default_from =  settings.DEFAULT_FROM_EMAIL
-        self.password = settings.EMAIL_HOST_PASSWORD
-        self.use_tls = settings.EMAIL_USE_TLS
+        self.host = getattr(settings, 'EMAIL_HOST', None)
+        self.port = getattr(settings,  'EMAIL_PORT', None)
+        self.username = getattr(settings, 'EMAIL_HOST_USER', None)
+        self.default_from =  getattr(settings, 'DEFAULT_FROM_EMAIL', None)
+        self.password = getattr(settings, 'EMAIL_HOST_PASSWORD', None)
+        self.use_tls = getattr(settings, 'EMAIL_USE_TLS', False)
+        
+        if not self.host or not self.port or not self.username or not self.password:
+            raise Exception("Email credentials not provided")
     
     def render_template(self, template_name, context):
         html_content = render_to_string(template_name, context)
         text_content = strip_tags(html_content)
+
         return text_content, html_content
     
     def set_attachment(self, file):
@@ -45,15 +50,10 @@ class EmailService(threading.Thread):
         encoders.encode_base64(part)
         filename = path.basename(file.name).split('/')[-1]
         part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+
         return part
     
     def send_email(self, *args, **kwargs):
-        print(f"kwargs: {kwargs}")
-        print(f"args: {args}")
-        print(f"self.host= {self.host}")
-        print(f"self.port= {self.port}")
-        print(f"self.username= {self.username}")
-
         # User may provide both text and html version of the message
         if kwargs.get("text", None) and kwargs.get("html", None):
             msg = MIMEMultipart('alternative')
@@ -73,18 +73,20 @@ class EmailService(threading.Thread):
             msg = MIMEMultipart('alternative')
             msg.attach(MIMEText(text_content, 'plain'))
             msg.attach(MIMEText(html_content, 'html'))
+        else:
+            raise Exception("No message content provided")
         
-        # attachments are supplied as [{'file_content': ..., 'file_name': ...}, ...]
+        # attachments are supplied as [FILE, ...] where FILE implements .read() and .name
         if kwargs.get("attachments", None):
             msg = MIMEMultipart()
             if kwargs.get("attachments", None):
                 for file in kwargs.get("attachments"):
-                    part = self.set_attachment(file)
-                    print(f"part: {part}")
+                    if getattr(file, 'read', None) and getattr(file, 'name', None):
+                        part = self.set_attachment(file)
+                    else:
+                        raise Exception("Invalid file object provided")
                     msg.attach(part)            
         
-        msg['Subject'] = kwargs.get("subject", "No subject")
-        msg['From'] = self.username
         if kwargs.get("recipients", None) or kwargs.get("to", None):
             recipients = kwargs.get("recipients")
             if not isinstance(recipients, list):
@@ -92,6 +94,14 @@ class EmailService(threading.Thread):
             msg['To'] = ', '.join(recipients)
         else:
             raise Exception("No recipients provided")
+        
+        msg['Subject'] = kwargs.get("subject", "No subject")
+        if self.username or self.default_from:
+            if not self.username:
+                self.username = self.default_from
+            msg['From'] = self.username
+        else:
+            raise Exception("No from address provided")
         
         with smtplib.SMTP_SSL(self.host, self.port) as smtp_server:
             smtp_server.login(self.username, self.password)
@@ -109,4 +119,5 @@ class EmailService(threading.Thread):
                 print(f"Error sending email: {e}")
     
     def send(self, *args, **kwargs):
+        #TODO validate `kwargs`
         self.email_queue.put(kwargs)
