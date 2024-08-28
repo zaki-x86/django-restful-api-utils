@@ -1,12 +1,13 @@
 from rest_framework.renderers import JSONRenderer
-from django.conf import settings
-from rest_framework_toolbox.core.utils import import_class
 
 __all__ = [
     'RestJsonRenderer'
 ]
 
 def get_response_class(view = None):
+    from django.conf import settings
+    from rest_framework_toolbox.core.utils import import_class
+    
     if view and hasattr(view, 'success_model'):
         return view.success_model
     elif getattr(settings, 'SUCCESS_JSON_MODEL', None):
