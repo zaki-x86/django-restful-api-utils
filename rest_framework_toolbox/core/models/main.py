@@ -31,6 +31,11 @@ class JSONModel(metaclass=_JSONModelMeta):
                 setattr(self, key, field.get_value(value))
 
     def to_dict(self):
+        """
+        Generates a dictionary representation of the model
+        :return: dict
+        :rtype: dict
+        """
         result = {}
         for key, field in self._fields.items():
             # Fields: String, Integer, Boolean, ... etc.
@@ -56,3 +61,18 @@ class JSONModel(metaclass=_JSONModelMeta):
 
     def to_response(self, *args, **kwds):
         return Response(data=self.to_dict(), headers=kwds.get('headers', {}), status=kwds.get('http_status', 200))
+
+    def serializer(self, *args, **kwds):
+        serializer_fields = {}
+        for key, field in self._fields.items():
+            if isinstance(field, (Field, JSONModel)):
+                serializer_fields[key] = field.serializer()
+        
+        from rest_framework import serializers
+        return type(
+            self.__class__.__name__ + 'Serializer',
+            (serializers.Serializer,),
+            serializer_fields
+        )
+        
+            
