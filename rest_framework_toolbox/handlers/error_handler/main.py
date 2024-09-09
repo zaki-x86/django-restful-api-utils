@@ -87,6 +87,9 @@ class ErrorHandler:
             return import_class(settings.ERROR_JSON_MODEL)
         else:
             raise Exception("A global error json model must be set")
+        
+    def _convert_to_apiexception(self, exc):
+        pass
     
     def _get_error_model_fields(self) -> dict:
         """Returns all model instance atrributes and their types"""
@@ -106,13 +109,13 @@ class ErrorHandler:
     def _handle(self, exc : APIException, context: Dict, response: Response) -> JSONModel:
         view = context.get('view', None)
         exception_class = exc.__class__.__name__
-        print(f"Handling exception: {exception_class} in {view}")
         error_res = None
-        error_data = None
+                
+        assert view, "View is required to handle exceptions"
+        assert self.error_model, "Error model is required to handle exceptions"
         
         # 1. Check if the user registered any custom handler against the exception 
         if exception_class in self._user_handlers:
-            print("Handling user-defined exception")
             user_handler = self._user_handlers[exception_class]
             # User handler must return an instance of self.error_model class
             error_res = user_handler(exc, context, response)
@@ -120,7 +123,20 @@ class ErrorHandler:
 
             return error_res
         
-        # 2. Check if the exception thrown is DRF default and can be handled by a default handler or view's 'on_error' method
+        # 2. Check if the exception can be handled by view's 'on_error' method
+        if getattr(view, 'on_error', None):
+            serializer_error_handler = getattr(view, 'on_error', None)
+            if serializer_error_handler and callable(serializer_error_handler):
+                if isinstance(exc, APIException):
+                    error_res = serializer_error_handler(exc, context, response)
+                else:
+                    pass
+            if error_res:
+                assert isinstance(error_res, self.error_model), "User-defined handler must return an instance of the error model"
+                
+                return error_res
+        
+        # 3. Fallback to default handlers defined in error_res if no `on_error` is defined
         elif exception_class in self._default_handlers:
             #print("Handling default exception")
             error_res = self.error_model()
@@ -130,19 +146,9 @@ class ErrorHandler:
                 handler = getattr(error_res, camel_to_snake(exception_class), None)
                 if callable(handler):
                     error_res = handler(context['request'], response)
-            
-            elif view:
-                serializer_error_handler = getattr(view, 'on_error', None)
-                if serializer_error_handler and callable(serializer_error_handler):
-                    error_res = serializer_error_handler(exc, context, response)
-                else:
-                    error_res = None
-                    error_data = exc.get_full_details()
-                    #print(f"Serializer errors: {error_data}")
-            else:
-                # No view is registered in context - return
-                print("No view is registered in context")
-                return
+                    if error_res:
+                        assert isinstance(error_res, self.error_model), "User-defined handler must return an instance of the error model"
+                        return error_res
         
         # 3. If no handler is defined, handle the error using the exception class user supplied attributes    
         else:
@@ -150,34 +156,22 @@ class ErrorHandler:
             error_res = self.error_model()
 
             for field in error_response_fields:
-                if isinstance(field, JSONModel):
-                    for _field in get_class_fields(field):
-                        if getattr(exc, _field, None):
-                            val = getattr(exc, _field, None)
-                            setattr(field, _field, val)
-                                
                 # Check if the field value is set directly in the exc class
                 if getattr(exc, field, None):
                     val = getattr(exc, field, None)
+                    if val and callable(val):
+                        val = val(context, exc.get_full_details())
                     setattr(error_res, field, val)
-                
-                # Check if the field value is set dynamically via get_* method
-                else:
-                    getter= getattr(exc, f'get_{field}', None)
-                    if getter:
-                        val = getter(response, error_data)
-                        setattr(error_res, field, val)
 
         # 4. Postprocessing
         if error_res:
             return error_res
-        elif error_data:        
-            return self.error_model(**error_data)
         else:
-            None
+            raise Exception(f"Error could not be handled:\n{exc.get_full_details()}")
 
     @staticmethod
     def handle_exception(exc, context) -> Response:
+        print(f"Handling exception: {exc.__class__.__name__}")
         # WARNING: Don't remove the default handler as it performs DB rollback and init headers
         self = ErrorHandler()
         response = drf_exception_handler(exc, context)
