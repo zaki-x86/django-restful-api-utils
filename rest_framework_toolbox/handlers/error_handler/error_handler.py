@@ -33,6 +33,8 @@ def exception_handler(exc, context):
         response.data = error_res.to_dict()
         if getattr(exc, 'headers', None):
             response.headers.update(exc.headers)
+        if getattr(exc, 'callback', None):
+            response.add_post_render_callback(exc.callback)
         return response
         
     except Exception as e:
