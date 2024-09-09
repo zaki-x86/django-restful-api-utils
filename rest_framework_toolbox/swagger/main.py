@@ -39,6 +39,7 @@ class Schema:
         examples = getattr(schema, 'examples', None)
 
         gen_request = None
+        gen_auth = []
         gen_parameters = []
         gen_responses = {}
         gen_examples = []
@@ -47,6 +48,14 @@ class Schema:
         if request:
             if isinstance(request, (OpenApiRequest, serializers.Serializer)):
                 gen_request = request
+
+        # Add auth
+        if auth:
+            if isinstance(auth, (list, tuple)):
+                for a in auth:
+                    gen_auth.append(a)
+            elif isinstance(auth, serializers.Serializer):
+                gen_auth.append(auth)
 
         # Add parameters
         if parameters:
@@ -66,13 +75,26 @@ class Schema:
                 if isinstance(example, OpenApiExample):
                     gen_examples.append(example)
 
+        if not auth:
+            return extend_schema(
+                operation_id=operation_id,
+                description=description,
+                summary=summary,
+                tags=tags,
+                external_docs=external_docs,
+                request=gen_request,
+                parameters=gen_parameters,
+                responses=gen_responses,
+                examples=gen_examples
+            )
+            
         return extend_schema(
             operation_id=operation_id,
             description=description,
             summary=summary,
             tags=tags,
             external_docs=external_docs,
-            auth=auth,
+            auth=gen_auth,
             request=gen_request,
             parameters=gen_parameters,
             responses=gen_responses,
