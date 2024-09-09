@@ -1,5 +1,6 @@
 from typing import Any, List, Dict
 from datetime import datetime, date
+from rest_framework import serializers
 
 # Forward declare JSONModel type
 
@@ -22,6 +23,10 @@ class Field:
     """
     def __init__(self, default=None):
         self.default = default
+        self.allow_null = True
+        self.read_only = False
+        self.required = False
+        self.help_text = ""
         self.value = default
         
     def get_value(self, value : Any = None):
@@ -36,6 +41,24 @@ class Field:
         if value is None and self.default is not None:
             return self.default
         return value
+    
+    def serializer(self, value = None):
+        if value:
+            return serializers.Field(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.Field(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )    
+        
+    def __repr__(self):
+        return f"<{self.__class__}>: {self.value}"
 
 
 class StringField(Field):
@@ -64,6 +87,20 @@ class StringField(Field):
             #assert type(value) is str, "Value should be a string"
         return value
 
+    def serializer(self, value = None):
+        if value:
+            return serializers.CharField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required,
+            )
+        return serializers.CharField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 
 class IntegerField(Field):
     """Integer field. Constructor ensures that default value assigned is an integer.
@@ -95,6 +132,20 @@ class IntegerField(Field):
             #assert type(value) is int, "Value should be an integer"
         return value
 
+    def serializer(self, value = None):
+        if value:
+            return serializers.IntegerField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.IntegerField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 class BooleanField(Field):
     """Boolean field. Constructor ensures that default value assigned is a boolean.
     """
@@ -114,6 +165,21 @@ class BooleanField(Field):
             pass
             #assert type(value) is bool, "Value should be a boolean"
         return value
+    
+    def serializer(self, value = None):
+        if value:
+            return serializers.BooleanField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.BooleanField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 
 class DateTimeField(Field):
     """DateTime field. Constructor ensures value assigned is a `datetime`
@@ -134,6 +200,21 @@ class DateTimeField(Field):
             pass
             #assert type(value) is datetime, "Value should be a datetime"
         return value
+    
+    def serializer(self, value = None):
+        if value:
+            return serializers.DateTimeField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.DateTimeField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 
 class DateField(Field):
     """Date field. Constructor ensures value assigned is a `date`.
@@ -155,6 +236,20 @@ class DateField(Field):
             #assert type(value) is date, "Value should be a datetime"
         return value
 
+    def serializer(self, value = None):
+        if value:
+            return serializers.DateField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.DateField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 class ListField(Field):
     """List Field. Constructor ensures value assigned is a `list`
     """
@@ -172,6 +267,21 @@ class ListField(Field):
             pass
             #assert type(value) is list, "Value should be a list"
         return value
+
+    def serializer(self, value = None):
+        if value:
+            return serializers.ListField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.ListField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 
 class DictField(Field):
     """Dict Field. Constructor ensures value assigned is a `dict`
@@ -191,8 +301,29 @@ class DictField(Field):
             #assert type(value) is dict, "Value should be a dict"
         return value
     
+    def serializer(self, value= None):
+        if value:
+            
+            return serializers.DictField(
+                default = value,
+                allow_null = self.allow_null,
+                read_only = self.read_only,
+                required = self.required
+            )
+        return serializers.DictField(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
 class DataField(Field):
-    pass
-
-class ErrorField(Field):
-    pass
+    def serializer(self, custom_serializer):
+        if isinstance(custom_serializer, serializers.Field):
+            return custom_serializer
+        
+        return custom_serializer(
+            default = self.default,
+            allow_null = self.allow_null,
+            read_only = self.read_only,
+            required = self.required
+        )
