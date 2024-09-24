@@ -105,7 +105,35 @@ class ErrorHandler:
     
     def override_default_handler(self, exception_name: str, handler: Callable) -> None:
         self._default_handlers[exception_name] = handler
-    
+
+    def _handle_with_registered_handler(self, exception_name: str, exc, context, response):
+        if exception_name in self._user_handlers:
+            user_handler = self._user_handlers[exception_name]
+            # User handler must return an instance of self.error_model class
+            error_res = user_handler(exc, context, response)
+            assert isinstance(error_res, self.error_model), "User-defined handler must return an instance of the error model"
+
+            return error_res
+
+        return None
+
+    def _handle_with_predefined_handler(self, exception_class: str, exc, context, response):
+        if exception_class in self._default_handlers:
+            # print("Handling default exception")
+            error_res = self.error_model()
+
+            # Handle default exception using handler defined in error_res
+            if getattr(error_res, camel_to_snake(exception_class), None):
+                handler = getattr(error_res, camel_to_snake(exception_class), None)
+                if callable(handler):
+                    error_res = handler(context['request'], response)
+                    if error_res:
+                        assert isinstance(error_res, self.error_model), \
+                            "User-defined handler must return an instance of the error model"
+                        return error_res
+
+            return None
+
     def _handle(self, exc : APIException, context: Dict, response: Response) -> JSONModel:
         view = context.get('view', None)
         exception_class = exc.__class__.__name__
@@ -115,40 +143,35 @@ class ErrorHandler:
         assert self.error_model, "Error model is required to handle exceptions"
         
         # 1. Check if the user registered any custom handler against the exception 
-        if exception_class in self._user_handlers:
-            user_handler = self._user_handlers[exception_class]
-            # User handler must return an instance of self.error_model class
-            error_res = user_handler(exc, context, response)
-            assert isinstance(error_res, self.error_model), "User-defined handler must return an instance of the error model"
+        error_res = self._handle_with_registered_handler(exception_class, exc, context, response)
+        if error_res:
 
             return error_res
-        
+
+        # If the error is an instance of Http404 which is a standard exception but not an APIException
+        if exception_class == 'Http404':
+            error_res = self._handle_with_predefined_handler(exception_class, exc, context, response)
+
+            if error_res:
+                return error_res
+
         # 2. Check if the exception can be handled by view's 'on_error' method
         if getattr(view, 'on_error', None):
             serializer_error_handler = getattr(view, 'on_error', None)
             if serializer_error_handler and callable(serializer_error_handler):
-                if isinstance(exc, APIException):
-                    error_res = serializer_error_handler(exc, context, response)
-                else:
-                    pass
+                error_res = serializer_error_handler(exc, context, response)
+                
             if error_res:
-                assert isinstance(error_res, self.error_model), "User-defined handler must return an instance of the error model"
+                assert isinstance(error_res, self.error_model), \
+                    "User-defined handler must return an instance of the error model"
                 
                 return error_res
         
         # 3. Fallback to default handlers defined in error_res if no `on_error` is defined
-        elif exception_class in self._default_handlers:
-            #print("Handling default exception")
-            error_res = self.error_model()
-            
-            # Handle default exception using handler defined in error_res
-            if getattr(error_res, camel_to_snake(exception_class), None):
-                handler = getattr(error_res, camel_to_snake(exception_class), None)
-                if callable(handler):
-                    error_res = handler(context['request'], response)
-                    if error_res:
-                        assert isinstance(error_res, self.error_model), "User-defined handler must return an instance of the error model"
-                        return error_res
+        error_res = self._handle_with_predefined_handler(exception_class, exc, context, response)
+
+        if error_res:
+            return error_res
         
         # 3. If no handler is defined, handle the error using the exception class user supplied attributes    
         else:
