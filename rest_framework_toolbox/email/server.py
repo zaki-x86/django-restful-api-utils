@@ -37,29 +37,31 @@ class SMTPService(threading.Thread):
         self.daemon = True
         self.count = 0
         self.logger = None
+        
+        EMAIL_HOST = kwargs.pop('EMAIL_HOST', 'smtp.gmail.com')
+        EMAIL_PORT = kwargs.pop('EMAIL_PORT', 465)
+        EMAIL_HOST_USER = kwargs.pop('EMAIL_HOST_USER', None)
+        EMAIL_HOST_PASSWORD = kwargs.pop('EMAIL_HOST_PASSWORD', None)
+        DEFAULT_FROM_EMAIL = kwargs.pop('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+        EMAIL_USE_TLS = kwargs.pop('EMAIL_USE_TLS', True)
 
         self.lock = threading.Lock()
 
         load_dotenv()
 
         self.host = getenv(
-            'EMAIL_HOST', 
-            kwargs.get('EMAIL_HOST', 'smtp.gmail.com'))
+            'EMAIL_HOST', EMAIL_HOST)
         self.port = getenv(
-            'EMAIL_PORT', 
-            kwargs.get('EMAIL_PORT', 465))
+            'EMAIL_PORT', EMAIL_PORT)
         self.username = getenv(
-            'EMAIL_HOST_USER', 
-            kwargs.get('EMAIL_HOST_USER', None))
+            'EMAIL_HOST_USER', EMAIL_HOST_USER)
         self.default_from =  getenv(
-            'DEFAULT_FROM_EMAIL', 
-            kwargs.get('DEFAULT_FROM_EMAIL', None))
+            'DEFAULT_FROM_EMAIL', DEFAULT_FROM_EMAIL)
         self.password = getenv(
-            'EMAIL_HOST_PASSWORD', 
-            kwargs.get('EMAIL_HOST_PASSWORD'))
+            'EMAIL_HOST_PASSWORD', EMAIL_HOST_PASSWORD)
         self.use_tls = getenv(
             'EMAIL_USE_TLS', 
-            True)
+            EMAIL_USE_TLS)
 
         if not self.host or not self.port or not self.username or not self.password:
             raise Exception("Email credentials not provided")

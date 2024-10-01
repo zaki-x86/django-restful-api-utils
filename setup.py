@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='rest_framework_toolbox',
-    version='0.3203',
+    version='0.3206',
     packages= find_packages(),
     include_package_data=True,
     install_requires=[
