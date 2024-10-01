@@ -39,16 +39,28 @@ class SMTPService(threading.Thread):
         self.logger = None
 
         self.lock = threading.Lock()
-        
+
         load_dotenv()
-        
-        self.host = getenv('EMAIL_HOST', None)
-        self.port = getenv('EMAIL_PORT', None)
-        self.username = getenv('EMAIL_HOST_USER', None)
-        self.default_from =  getenv('DEFAULT_FROM_EMAIL', "None")
-        self.password = getenv('EMAIL_HOST_PASSWORD', None)
-        self.use_tls = getenv('EMAIL_USE_TLS', False)
-        
+
+        self.host = getenv(
+            'EMAIL_HOST', 
+            kwargs.get('EMAIL_HOST', 'smtp.gmail.com'))
+        self.port = getenv(
+            'EMAIL_PORT', 
+            kwargs.get('EMAIL_PORT', 465))
+        self.username = getenv(
+            'EMAIL_HOST_USER', 
+            kwargs.get('EMAIL_HOST_USER', None))
+        self.default_from =  getenv(
+            'DEFAULT_FROM_EMAIL', 
+            kwargs.get('DEFAULT_FROM_EMAIL', None))
+        self.password = getenv(
+            'EMAIL_HOST_PASSWORD', 
+            kwargs.get('EMAIL_HOST_PASSWORD'))
+        self.use_tls = getenv(
+            'EMAIL_USE_TLS', 
+            True)
+
         if not self.host or not self.port or not self.username or not self.password:
             raise Exception("Email credentials not provided")
     
