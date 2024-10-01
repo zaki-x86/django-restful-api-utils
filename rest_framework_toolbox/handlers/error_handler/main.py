@@ -54,7 +54,7 @@ class ErrorHandler:
         if error_model:
             assert issubclass(error_model, JSONModel), "error_model must be an extension to JSONModel"
         self.error_model = error_model
-        
+
     @classmethod
     def register_handler(cls, exception_class):
         def decorator(func):
@@ -78,7 +78,7 @@ class ErrorHandler:
     def register_exceptions(cls, exceptions : list):
         for exception in exceptions:
             cls.register_exception(exception)
-    
+
     @staticmethod
     def get_error_model(view = None):
         if view and hasattr(view, 'error_model'):
@@ -87,10 +87,12 @@ class ErrorHandler:
             return import_class(settings.ERROR_JSON_MODEL)
         else:
             raise Exception("A global error json model must be set")
-        
+
     def _convert_to_apiexception(self, exc):
-        pass
-    
+        return APIException(
+            
+        )
+
     def _get_error_model_fields(self) -> dict:
         """Returns all model instance atrributes and their types"""
         fields = []
@@ -102,7 +104,7 @@ class ErrorHandler:
             else:
                 pass
         return fields
-    
+
     def override_default_handler(self, exception_name: str, handler: Callable) -> None:
         self._default_handlers[exception_name] = handler
 
@@ -138,9 +140,11 @@ class ErrorHandler:
         view = context.get('view', None)
         exception_class = exc.__class__.__name__
         error_res = None
-                
+
         assert view, "View is required to handle exceptions"
         assert self.error_model, "Error model is required to handle exceptions"
+
+        #print(f"Handling exception {exception_class}")
         
         # 1. Check if the user registered any custom handler against the exception 
         error_res = self._handle_with_registered_handler(exception_class, exc, context, response)
@@ -150,6 +154,7 @@ class ErrorHandler:
 
         # If the error is an instance of Http404 which is a standard exception but not an APIException
         if exception_class == 'Http404':
+            print("Handling with predefined handler")
             error_res = self._handle_with_predefined_handler(exception_class, exc, context, response)
 
             if error_res:
@@ -157,6 +162,7 @@ class ErrorHandler:
 
         # 2. Check if the exception can be handled by view's 'on_error' method
         if getattr(view, 'on_error', None):
+            print(f"Handling exception {exception_class} with on_error")
             serializer_error_handler = getattr(view, 'on_error', None)
             if serializer_error_handler and callable(serializer_error_handler):
                 error_res = serializer_error_handler(exc, context, response)
