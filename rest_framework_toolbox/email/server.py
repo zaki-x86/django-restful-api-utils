@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
 
-load_dotenv()
 
 # Set those up in .env
 # EMAIL_HOST = 'smtp.gmail.com'   # Here I am using gmail smtp server 
@@ -41,10 +40,12 @@ class SMTPService(threading.Thread):
 
         self.lock = threading.Lock()
         
+        load_dotenv()
+        
         self.host = getenv('EMAIL_HOST', None)
         self.port = getenv('EMAIL_PORT', None)
         self.username = getenv('EMAIL_HOST_USER', None)
-        self.default_from =  getenv('DEFAULT_FROM_EMAIL', None)
+        self.default_from =  getenv('DEFAULT_FROM_EMAIL', "None")
         self.password = getenv('EMAIL_HOST_PASSWORD', None)
         self.use_tls = getenv('EMAIL_USE_TLS', False)
         

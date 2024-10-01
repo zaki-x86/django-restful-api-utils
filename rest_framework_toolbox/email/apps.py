@@ -7,7 +7,7 @@ class EmailConfig(AppConfig):
     name = 'rest_framework_toolbox.email'
     label = 'rest_framework_toolbox_email'
 
-    def __init__(self, app_name: str, app_module: Any | None) -> None:
+    def __init__(self, app_name: str, app_module) -> None:
         super().__init__(app_name, app_module)
         self.service = None
 
