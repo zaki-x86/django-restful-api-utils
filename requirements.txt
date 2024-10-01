@@ -1,0 +1,12 @@
+build==1.2.2
+builtin-interfaces==1.2.1
+composition-interfaces==1.2.1
+djangorestframework==3.15.2
+logging-demo==0.20.4
+pip-chill==1.0.3
+python-decouple==3.8
+python-dotenv==1.0.1
+resource-retriever==3.1.2
+rmw-dds-common==1.6.0
+twine==5.1.1
+unique-identifier-msgs==2.2.1
