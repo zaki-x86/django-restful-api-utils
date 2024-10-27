@@ -1,4 +1,4 @@
-from rest_framework_toolbox.core.json_model import (
+from rest_framework_toolbox.core.models import (
     IntegerField,
     StringField,
     BooleanField,
