@@ -32,6 +32,7 @@ class Schema:
         summary = getattr(schema, "summary", None)
         tags = getattr(schema, "tags", None)
         external_docs = getattr(schema, 'external_docs', None)
+        methods = getattr(schema, "methods", None)
         auth = getattr(schema, "auth", None)
         request = getattr(schema, 'request', None)
         parameters = getattr(schema, 'parameters', None)
@@ -82,12 +83,13 @@ class Schema:
                 summary=summary,
                 tags=tags,
                 external_docs=external_docs,
+                methods=methods,
                 request=gen_request,
                 parameters=gen_parameters,
                 responses=gen_responses,
                 examples=gen_examples
             )
-            
+
         return extend_schema(
             operation_id=operation_id,
             description=description,
@@ -95,11 +97,13 @@ class Schema:
             tags=tags,
             external_docs=external_docs,
             auth=gen_auth,
+            methods=methods,
             request=gen_request,
             parameters=gen_parameters,
             responses=gen_responses,
             examples=gen_examples
         )
+
 
 def generate_success_schema(serializer_name="SuccessSchema", response=None):
     """
@@ -118,30 +122,31 @@ def generate_success_schema(serializer_name="SuccessSchema", response=None):
     for field_name, field_value in success_class._fields.items():
         # Inspect `response`
         if field_name in response.keys():
-            
+
             # if response[name] is a serializer, add it to `serializer_fields`
             if isinstance(response[field_name], serializers.Serializer):
                 serializer_fields[field_name] = response[field_name]
-            
+
             # if response[name] is an object/value, get its serializer and add its default value
             else:
                 # provide default value to the serializer
-                serializer_fields[field_name] = field_value.serializer(response[field_name])
+                serializer_fields[field_name] = field_value.serializer(
+                    response[field_name])
         # Use default value
         else:
             serializer_fields[field_name] = field_value.serializer()
-    
+
     # Create the serializer class
     serializer_cls = type(
         serializer_name,
         (serializers.Serializer,),
         serializer_fields
     )
-    
+
     return serializer_cls
 
 
-def generate_error_schema(serializer_name="FailSchema", response = None):
+def generate_error_schema(serializer_name="FailSchema", response=None):
     """
     Generates a DRF serializer for error responses
     """
@@ -154,24 +159,25 @@ def generate_error_schema(serializer_name="FailSchema", response = None):
     for field_name, field_value in fail_class._fields.items():
         # Inspect `response`
         if field_name in response.keys():
-            
+
             # if response[name] is a serializer, add it to `serializer_fields`
             if isinstance(response[field_name], serializers.Serializer):
                 serializer_fields[field_name] = response[field_name]
-            
+
             # if response[name] is an object/value, get its serializer and add its default value
             else:
                 # provide default value to the serializer
-                serializer_fields[field_name] = field_value.serializer(response[field_name])
+                serializer_fields[field_name] = field_value.serializer(
+                    response[field_name])
         # Use default value
         else:
             serializer_fields[field_name] = field_value.serializer()
-    
+
     # Create the serializer class
     serializer_cls = type(
         serializer_name,
         (serializers.Serializer,),
         serializer_fields
     )
-    
+
     return serializer_cls
