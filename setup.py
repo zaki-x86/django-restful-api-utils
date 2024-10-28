@@ -30,3 +30,4 @@ setup(
     license=open('LICENSE').read(),
     zip_safe=False,
 )
+

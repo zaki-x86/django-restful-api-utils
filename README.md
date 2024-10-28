@@ -1,1 +1,1 @@
-# Django RESTful Toolbox
+# Django Rest framework Toolbox

@@ -5,7 +5,6 @@ from rest_framework_toolbox.core.models import (
     ListField,
     JSONModel,
 )
-import sys
 
 class TestJSONModel:
     class BasicResponse(JSONModel):

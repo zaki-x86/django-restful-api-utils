@@ -1,7 +1,7 @@
+import logging
 from rest_framework.renderers import JSONRenderer
 from django.conf import settings
 from rest_framework_toolbox.core.utils import import_class
-import logging
 
 __all__ = [
     'RestJsonRenderer'

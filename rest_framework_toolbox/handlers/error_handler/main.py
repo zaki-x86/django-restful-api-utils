@@ -1,6 +1,6 @@
+from typing import Any, Dict, TypeVar, Callable
 from rest_framework_toolbox.core.models import JSONModel
 from rest_framework_toolbox.core.utils import import_class, get_class_fields, camel_to_snake
-from typing import Any, Dict, TypeVar, Callable
 
 from ._config import configs
 

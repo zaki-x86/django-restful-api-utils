@@ -18,8 +18,6 @@ from drf_spectacular.utils import (
     inline_serializer
 )
 
-from .schema_errors import SchemaSuccess, SchemaError
-
 
 class Schema:
     def __init__(self) -> None:

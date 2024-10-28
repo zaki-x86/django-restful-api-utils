@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 __all__ = [
     'exception_handler',
+    
 ]
 
 handler = ErrorHandler()
