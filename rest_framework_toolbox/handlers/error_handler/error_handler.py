@@ -53,7 +53,6 @@ def exception_handler(exc, context):
                 'details': str(e),
                 'traceback': traceback.format_exc()
             }
-            handler.report_crash()
         else:
             handler.report_crash()
             status_code = 500
