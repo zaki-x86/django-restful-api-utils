@@ -354,7 +354,6 @@ class ErrorHandler:
                 return response
         except:
             # TODO capture traceback and log this error, then send it to sentry/PROMETHEOUS
-            print(response)
             import traceback
             traceback.print_exc()
             response.status_code = 500
