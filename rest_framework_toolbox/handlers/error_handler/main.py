@@ -108,8 +108,7 @@ class ErrorHandler:
 
         if logger:
             return import_class(logger)
-        else:
-            return logging.getLogger('rest_framework_toolbox_error_logger')
+        return logging.getLogger('rest_framework_toolbox_error_logger')
 
     @classmethod
     def register_crash_logger(self):
